@@ -1,4 +1,4 @@
-from .didaapi import login_dida365, action_dida365
+from .didaapi import login_dida365, action2, transfer_string_to_cookies
 import os
 import json
 
@@ -13,46 +13,53 @@ class Unauthorized(Exception):
 
 
 class Dida:
-    def __init__(self, auto_save_and_load_token: bool = True):
-        self.auto_save_and_load_token = auto_save_and_load_token
+    def __init__(self, auto_save_and_load_cookies: bool = True):
+        self.auto_save_and_load_cookies = auto_save_and_load_cookies
         self.is_login = False
-        self.token = self._load_token() if self.auto_save_and_load_token else None
+        self.cookies = self._load_cookies() if self.auto_save_and_load_cookies else None
         self.is_login = self._login_verify()
 
     def login_with_email(self, username, password) -> "Dida":
-        self.token = login_dida365(username, password)
-        self.auto_save_and_load_token and self._save_token(self.token)
+        self.cookies = login_dida365(username, password)
+        self.auto_save_and_load_cookies and self._save_cookies(self.cookies)
         self.is_login = self._login_verify()
         return self
 
-    def login_with_token(self, token: str) -> "Dida":
-        self.token = token
-        self.auto_save_and_load_token and self._save_token(self.token)
+    def login_with_cookies(self, cookies: dict) -> "Dida":
+        assert isinstance(cookies, dict), "cookies 必须是字典"
+        self.cookies = cookies
+        self.auto_save_and_load_cookies and self._save_cookies(self.cookies)
+        self.is_login = self._login_verify()
+        return self
+
+    def login_with_cookies_string(self, cookies: str) -> "Dida":
+        self.cookies = transfer_string_to_cookies(cookies)
+        self.auto_save_and_load_cookies and self._save_cookies(self.cookies)
         self.is_login = self._login_verify()
         return self
 
     def action(self, action) -> str:
         if not self.is_login:
             raise Unauthorized("未登录")
-        return action_dida365(self.token, action)
+        return action2(self.cookies, action)
 
     def __str__(self) -> str:
-        return f"Dida(token={self.token})"
+        return f"Dida(cookies={self.cookies})"
 
     def __repr__(self) -> str:
         return self.__str__()
 
-    def _load_token(self) -> str:
+    def _load_cookies(self) -> dict:
         current_path = os.path.dirname(__file__)
-        if not os.path.exists(os.path.join(current_path, "token.txt")):
+        if not os.path.exists(os.path.join(current_path, "cookies.txt")):
             return None
-        with open(os.path.join(current_path, "token.txt"), "r", encoding="utf-8") as f:
-            return f.read()
+        with open(os.path.join(current_path, "cookies.txt"), "r", encoding="utf-8") as f:
+            return json.loads(f.read())
 
-    def _save_token(self, token: str):
+    def _save_cookies(self, cookies: dict):
         current_path = os.path.dirname(__file__)
-        with open(os.path.join(current_path, "token.txt"), "w", encoding="utf-8") as f:
-            f.write(token)
+        with open(os.path.join(current_path, "cookies.txt"), "w", encoding="utf-8") as f:
+            f.write(json.dumps(cookies))
 
     def user_profile(self) -> dict:
         return json.loads(self.action("user/profile"))
@@ -67,8 +74,8 @@ class Dida:
         return json.loads(self.action("batch/check/0"))
 
     def _login_verify(self) -> bool:
-        if not self.token:
+        if not self.cookies:
             return False
-        if not action_dida365(self.token, "user/profile"):
+        if not action2(self.cookies, "user/profile"):
             return False
         return True

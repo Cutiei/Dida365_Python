@@ -1,5 +1,6 @@
 # 忽略 *token.txt
 *token.txt
+*cookies.txt
 
 # 忽略 *.pyc
 *.pyc
