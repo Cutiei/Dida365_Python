@@ -3,3 +3,6 @@
 
 # 忽略 *.pyc
 *.pyc
+
+# 忽略 main.py
+main.py
