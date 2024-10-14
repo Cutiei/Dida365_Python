@@ -2,6 +2,16 @@ from .didaapi import login_dida365, action_dida365
 import os
 import json
 
+
+class Unauthorized(Exception):
+    def __init__(self, message="未登录"):
+        self.message = message
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f"Unauthorized: {self.message}"
+
+
 class Dida:
     def __init__(self, auto_save_and_load_token: bool = True):
         self.auto_save_and_load_token = auto_save_and_load_token
@@ -14,7 +24,7 @@ class Dida:
         self.auto_save_and_load_token and self._save_token(self.token)
         self.is_login = self._login_verify()
         return self
-    
+
     def login_with_token(self, token: str) -> "Dida":
         self.token = token
         self.auto_save_and_load_token and self._save_token(self.token)
@@ -23,7 +33,7 @@ class Dida:
 
     def action(self, action) -> str:
         if not self.is_login:
-            raise Exception("未登录")
+            raise Unauthorized("未登录")
         return action_dida365(self.token, action)
 
     def __str__(self) -> str:
@@ -62,4 +72,3 @@ class Dida:
         if not action_dida365(self.token, "user/profile"):
             return False
         return True
-
