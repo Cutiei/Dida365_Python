@@ -5,4 +5,4 @@
 *.pyc
 
 # 忽略 main.py
-main.py
+test.py
